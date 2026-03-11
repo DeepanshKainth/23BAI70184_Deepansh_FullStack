@@ -1,0 +1,142 @@
+
+// JSX it is not HTML it is HTML-like or XML-like syntax
+// JSX (transpiled before it reaches the JS engine) - PARCEL - Babel
+
+
+// configureStore -> create a space for the store.
+// createAsyncThunk -> build on top of promises. 
+// createAsyncThunk is a utility function from the official Redux Toolkit (RTK) library that simplifies the process of handling asynchronous logic and side effects in a Redux application, such as fetching data from an API. 
+// with reloading the js and css again downloading 
+// whenever a parent get re rendered child also get re rendered
+
+// Testing Notes:
+// - Installed Jest, React Testing Library, jsdom for testing
+// - Configured Jest with Babel for ES modules
+// - Wrote unit tests for useAuth hook, logsSlice reducer, Header component, Logs component, Login component
+// - Used various Jest matchers: toBe, toEqual, toBeInTheDocument, toMatchSnapshot
+// - Tested async thunk with mocking dispatch
+// - Used act() to wrap state updates in tests
+// - Added debugger statement for browser debugging
+// - Dev server running on localhost:5173 for manual testing and debugging
+
+
+// React Optimization technique
+// React.memo -> saves a component from unnecessary rendering
+// it does a shallow comparison if the memory changes then it gets a rerender
+// so in case of function(is an object in js) every time the object memory changes it gets rerender that why useCallback comes
+
+// useCallback apply it to the prop becuase if that changes components get rerednered.
+// Use memo  -> saves the calculation
+// useCallback -> saves to rerender the function 
+
+
+// code Splitting
+// lazy loading - make the texts loads first, then images, then videos.
+
+// react.lazy () react.suspense()
+
+// Theoretical Notes for Viva - Experiment 5: Application Testing & Debugging
+
+// Q1: What is the purpose of automated testing in frontend applications?
+// A: Automated testing ensures the correctness, reliability, and maintainability of code. It catches bugs early, prevents regressions, and allows confident refactoring. In frontend apps, it validates UI behavior, user interactions, and data flow.
+
+// Q2: What is Jest and why is it used?
+// A: Jest is a JavaScript testing framework developed by Facebook. It's used for unit testing, integration testing, and snapshot testing. It provides matchers, mocking, and async support, making it ideal for React applications.
+
+// Q3: What are different types of tests in frontend development?
+// A: - Unit tests: Test individual functions/components in isolation.
+//   - Integration tests: Test how components interact.
+//   - End-to-end (E2E) tests: Test the entire application flow.
+//   - Snapshot tests: Capture UI snapshots to detect changes.
+
+// Q4: What is React Testing Library (RTL) and how does it differ from Enzyme?
+// A: RTL is a testing utility for React that focuses on testing components from the user's perspective. It queries the DOM like users do. Unlike Enzyme, which tests implementation details, RTL encourages testing behavior over internal structure.
+
+// Q5: How do you write a unit test for a JavaScript function using Jest?
+// A: Use describe() to group tests, test() or it() for individual tests. Use expect() with matchers like toBe(), toEqual(). Example: expect(add(2,3)).toBe(5);
+
+// Q6: What are Jest matchers? Give examples.
+// A: Matchers are assertion methods. Examples:
+//   - toBe(): Strict equality (===)
+//   - toEqual(): Deep equality for objects
+//   - toBeInTheDocument(): RTL matcher for DOM presence
+//   - toMatchSnapshot(): For snapshot testing
+//   - toHaveBeenCalled(): For mocked functions
+
+// Q7: How do you test React components using React Testing Library?
+// A: Import render from RTL, render the component, use screen to query elements, simulate user interactions with fireEvent or userEvent, assert with expect and matchers.
+
+// Q8: What is the difference between getBy, findBy, and queryBy in RTL?
+// A: - getBy: Throws error if not found (synchronous)
+//   - findBy: Returns promise, waits for async elements
+//   - queryBy: Returns null if not found (for negative assertions)
+
+// Q9: How do you implement asynchronous testing in Jest?
+// A: Use async/await with test functions. For promises, return the promise. Use waitFor() or findBy* for DOM updates. Mock async operations.
+
+// Q10: What is mocking in testing and why is it used?
+// A: Mocking replaces real implementations with fake ones. Used to isolate code under test, simulate external dependencies (APIs, modules), and control test scenarios.
+
+// Q11: How do you mock API calls in Jest?
+// A: Use jest.mock() to mock modules. For fetch, mock the global fetch or use libraries like msw. In RTL, mock at component level or use Redux mock store.
+
+// Q12: What is snapshot testing and how does it work?
+// A: Snapshot testing captures the rendered output of a component and compares it against saved snapshots. Detects unintended UI changes. Use toMatchSnapshot() matcher.
+
+// Q13: How do you update snapshots when they fail?
+// A: Run npm test -- -u or jest -u to update snapshots if changes are intentional.
+
+// Q14: What is the act() function in React testing?
+// A: act() wraps code that causes React state updates to ensure all updates are processed before assertions. Prevents "act" warnings and ensures tests reflect user experience.
+
+// Q15: How do you test Redux components?
+// A: Use redux-mock-store to create a mock store. Wrap components with Provider. Test actions, reducers, and component rendering based on state.
+
+// Q16: What debugging tools are used in frontend development?
+// A: Browser Developer Tools (Chrome DevTools), VS Code debugger, console.log, debugger statements, React DevTools, Redux DevTools.
+
+// Q17: How do you set breakpoints in VS Code for debugging?
+// A: Click in the gutter next to line numbers, or use F9. Launch debug session with F5, set breakpoints in source code.
+
+// Q18: What is the difference between console.log and debugger?
+// A: console.log prints values to console. debugger pauses execution at that line, allowing inspection of variables and step-through.
+
+// Q19: How do you debug asynchronous code?
+// A: Use async/await, set breakpoints in promise chains, use .then/.catch, or use debugger in async functions.
+
+// Q20: What are the benefits of automated testing?
+// A: - Early bug detection
+//   - Confidence in refactoring
+//   - Documentation of expected behavior
+//   - Faster development cycles
+//   - Improved code quality and maintainability
+
+// Q21: What is test-driven development (TDD)?
+// A: Write tests before code. Red-Green-Refactor cycle: Write failing test, implement code to pass, refactor while keeping tests green.
+
+// Q22: How do you handle testing in CI/CD pipelines?
+// A: Run tests automatically on commits/PRs using tools like GitHub Actions, Jenkins. Use coverage reports to ensure quality gates.
+
+// Q23: What is code coverage and why is it important?
+// A: Percentage of code executed by tests. Important to identify untested code paths. Tools like Jest provide coverage reports.
+
+// Q24: How do you test error boundaries in React?
+// A: Render component with error boundary, simulate errors, check if fallback UI is rendered.
+
+// Q25: What is the role of jsdom in testing?
+// A: jsdom is a DOM implementation for Node.js. Allows testing DOM manipulation without a real browser.
+
+// Q26: How do you test custom hooks?
+// A: Use @testing-library/react-hooks or test in components. Render hook in test component, assert behavior.
+
+// Q27: What is the difference between shallow rendering and full rendering?
+// A: Shallow rendering (Enzyme) renders only one level deep. Full rendering (RTL) renders the entire component tree.
+
+// Q28: How do you test accessibility in React apps?
+// A: Use jest-axe or react-testing-library's accessibility queries. Check ARIA attributes, keyboard navigation.
+
+// Q29: What is the purpose of setupFilesAfterEnv in Jest config?
+// A: Files to run after test environment setup, e.g., importing @testing-library/jest-dom for custom matchers.
+
+// Q30: How do you handle flaky tests?
+// A: Identify causes (async issues, timing), use waitFor with proper timeouts, avoid relying on exact timing, mock external dependencies. 
