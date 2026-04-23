@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LivePoll Security Demo</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="api.js"></script>
+  <style>
+    :root {
+      --bg: #07111f;
+      --bg2: #0f1729;
+      --card: rgba(15, 23, 42, 0.92);
+      --line: rgba(148, 163, 184, 0.18);
+      --text: #e5eef9;
+      --muted: #9ba9bb;
+      --brand: #7dd3fc;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --danger: #f87171;
+      --shadow: 0 24px 80px rgba(2, 6, 23, 0.4);
+      --radius: 22px;
+      --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+      --sans: Inter, 'Segoe UI', system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 26%),
+        radial-gradient(circle at top right, rgba(34, 197, 94, 0.1), transparent 28%),
+        linear-gradient(180deg, #050b16 0%, var(--bg) 100%);
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image: linear-gradient(rgba(148, 163, 184, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.04) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0));
+    }
+
+    button, input, textarea { font: inherit; }
+
+    button {
+      border: 0;
+      border-radius: 14px;
+      cursor: pointer;
+      color: #08111f;
+      background: linear-gradient(135deg, var(--brand), #a5f3fc);
+      padding: 0.8rem 1rem;
+      font-weight: 700;
+      transition: transform 0.12s ease, filter 0.12s ease;
+    }
+
+    button:hover { filter: brightness(1.02); }
+    button:active { transform: translateY(1px); }
+
+    button.secondary {
+      background: rgba(148, 163, 184, 0.12);
+      color: var(--text);
+      border: 1px solid var(--line);
+      font-weight: 600;
+    }
+
+    button.danger {
+      background: rgba(248, 113, 113, 0.16);
+      color: #fecaca;
+      border: 1px solid rgba(248, 113, 113, 0.25);
+    }
+
+    input, textarea {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.8);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 0.82rem 0.95rem;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    input:focus, textarea:focus {
+      border-color: rgba(125, 211, 252, 0.55);
+      box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.11);
+    }
+
+    textarea { resize: vertical; min-height: 120px; }
+
+    .page {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.4fr 0.8fr;
+      gap: 18px;
+      align-items: stretch;
+      margin-bottom: 18px;
+    }
+
+    .hero-card, .panel {
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(10, 16, 31, 0.96));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(20px);
+    }
+
+    .hero-card {
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-card::after {
+      content: '';
+      position: absolute;
+      inset: auto -80px -80px auto;
+      width: 220px;
+      height: 220px;
+      background: radial-gradient(circle, rgba(125, 211, 252, 0.28), transparent 70%);
+      filter: blur(6px);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(125, 211, 252, 0.16);
+      color: #bae6fd;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .hero h1 {
+      margin: 14px 0 10px;
+      font-size: clamp(2rem, 4vw, 3.6rem);
+      line-height: 0.95;
+      letter-spacing: -0.05em;
+      max-width: 10ch;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 70ch;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .stats {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .stat {
+      padding: 20px;
+      background: linear-gradient(180deg, rgba(9, 16, 31, 0.96), rgba(15, 23, 42, 0.88));
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 128px;
+    }
+
+    .stat strong {
+      font-size: 1.6rem;
+      letter-spacing: -0.04em;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 340px minmax(0, 1.2fr) 380px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      padding: 18px;
+    }
+
+    .panel h2 {
+      margin: 0 0 6px;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+    }
+
+    .panel p.subtle {
+      margin: 0 0 16px;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 0.95rem;
+    }
+
+    .stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      font-size: 0.83rem;
+      color: #cbd5e1;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .row > * {
+      flex: 1 1 0;
+    }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .demo-grid button {
+      padding: 0.72rem 0.85rem;
+      font-size: 0.9rem;
+    }
+
+    .status-banner {
+      margin-bottom: 14px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(148, 163, 184, 0.08);
+      color: #dbeafe;
+      line-height: 1.5;
+    }
+
+    .status-banner.ok {
+      border-color: rgba(52, 211, 153, 0.3);
+      background: rgba(16, 185, 129, 0.11);
+      color: #bbf7d0;
+    }
+
+    .status-banner.warn {
+      border-color: rgba(251, 191, 36, 0.3);
+      background: rgba(251, 191, 36, 0.09);
+      color: #fde68a;
+    }
+
+    .status-banner.error {
+      border-color: rgba(248, 113, 113, 0.3);
+      background: rgba(248, 113, 113, 0.09);
+      color: #fecaca;
+    }
+
+    .poll-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .poll-card {
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.78), rgba(15, 23, 42, 0.6));
+      padding: 16px;
+      cursor: pointer;
+      transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+    }
+
+    .poll-card:hover {
+      transform: translateY(-1px);
+      border-color: rgba(125, 211, 252, 0.28);
+    }
+
+    .poll-card.active {
+      border-color: rgba(125, 211, 252, 0.55);
+      background: linear-gradient(180deg, rgba(14, 40, 62, 0.92), rgba(15, 23, 42, 0.72));
+    }
+
+    .poll-title {
+      margin: 0 0 8px;
+      font-size: 1rem;
+      letter-spacing: -0.02em;
+    }
+
+    .poll-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .badge.green { background: rgba(52, 211, 153, 0.12); color: #86efac; }
+    .badge.gold { background: rgba(251, 191, 36, 0.12); color: #fde68a; }
+    .badge.blue { background: rgba(125, 211, 252, 0.12); color: #bae6fd; }
+    .badge.gray { background: rgba(148, 163, 184, 0.12); color: #cbd5e1; }
+
+    .option-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .option-card {
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(15, 23, 42, 0.82);
+      border: 1px solid var(--line);
+    }
+
+    .option-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .option-name {
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .option-count {
+      color: var(--muted);
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+
+    .progress {
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(148, 163, 184, 0.12);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+    }
+
+    .progress > div {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #38bdf8, #22c55e);
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .button-group button {
+      flex: 1 1 0;
+    }
+
+    .muted { color: var(--muted); }
+    .code { font-family: var(--mono); font-size: 0.86rem; }
+
+    .footer-note {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 1180px) {
+      .hero,
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page { padding: 16px; }
+      .demo-grid, .stats { grid-template-columns: 1fr; }
+      .row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useEffect, useMemo, useState } = React;
+
+    function App() {
+      const [session, setSession] = useState(window.livePollApi.readStoredSession());
+      const [polls, setPolls] = useState([]);
+      const [selectedPollId, setSelectedPollId] = useState(null);
+      const [selectedPoll, setSelectedPoll] = useState(null);
+      const [statusMessage, setStatusMessage] = useState('Loading LivePoll demo...');
+      const [statusTone, setStatusTone] = useState('warn');
+      const [busy, setBusy] = useState(false);
+      const [loginForm, setLoginForm] = useState({ username: 'alice', password: 'password123' });
+      const [pollForm, setPollForm] = useState({
+        question: '',
+        description: '',
+        expiresAt: '',
+        options: 'Live results chart\nAnonymous voting\nPoll scheduling',
+      });
+      const [pollFetchMode, setPollFetchMode] = useState('standard');
+      const [pollStatusFilter, setPollStatusFilter] = useState('ALL');
+      const [optimizedPage, setOptimizedPage] = useState(0);
+      const [optimizedSize, setOptimizedSize] = useState(6);
+      const [hasNextPage, setHasNextPage] = useState(false);
+      const [cursorState, setCursorState] = useState({ createdAt: null, id: null });
+
+      const isAuthenticated = Boolean(session.accessToken);
+      const isAdmin = session.roles?.includes('ROLE_ADMIN');
+      const voteDisabled = !selectedPoll || selectedPoll.status !== 'OPEN';
+
+      const setStatus = (message, tone = 'warn') => {
+        setStatusMessage(message);
+        setStatusTone(tone);
+      };
+
+      const hydrateProfile = async () => {
+        try {
+          const me = await window.livePollApi.me();
+          const mergedSession = {
+            ...window.livePollApi.readStoredSession(),
+            username: me.username,
+            roles: me.roles,
+          };
+          window.livePollApi.storeSession(mergedSession);
+          setSession(mergedSession);
+        } catch {
+          setSession(window.livePollApi.readStoredSession());
+        }
+      };
+
+      const loadPolls = async (preferredPollId = selectedPollId, options = {}) => {
+        const mode = options.mode ?? pollFetchMode;
+        const status = options.status ?? pollStatusFilter;
+        let data = [];
+
+        if (mode === 'offset') {
+          const page = options.page ?? optimizedPage;
+          const result = await window.livePollApi.listPollsOptimized({
+            page,
+            size: optimizedSize,
+            status,
+          });
+          data = result.items || [];
+          setOptimizedPage(result.page ?? page);
+          setHasNextPage(Boolean(result.hasNext));
+        } else if (mode === 'cursor') {
+          const cursor = options.cursor ?? cursorState;
+          const result = await window.livePollApi.listPollsByCursor({
+            size: optimizedSize,
+            status,
+            cursorCreatedAt: cursor?.createdAt || null,
+            cursorId: cursor?.id || null,
+          });
+          data = result.items || [];
+          setHasNextPage(Boolean(result.hasNext));
+          setCursorState(result.hasNext
+            ? { createdAt: result.nextCursorCreatedAt, id: result.nextCursorId }
+            : { createdAt: null, id: null });
+        } else {
+          data = await window.livePollApi.listPolls();
+          setHasNextPage(false);
+        }
+
+        setPollFetchMode(mode);
+        setPollStatusFilter(status);
+        setPolls(data);
+
+        if (!data.length) {
+          setSelectedPollId(null);
+          setSelectedPoll(null);
+          return;
+        }
+
+        if (preferredPollId && data.some((poll) => poll.id === preferredPollId)) {
+          setSelectedPollId(preferredPollId);
+          return;
+        }
+
+        if (!preferredPollId) {
+          setSelectedPollId(data[0].id);
+        }
+      };
+
+      const loadPollDetails = async (pollId) => {
+        if (!pollId) {
+          setSelectedPoll(null);
+          return;
+        }
+
+        const detail = await window.livePollApi.getPollResults(pollId);
+        setSelectedPoll(detail);
+      };
+
+      const refreshAll = async (preferredPollId = selectedPollId) => {
+        setBusy(true);
+        try {
+          await hydrateProfile();
+          await loadPolls(preferredPollId);
+          if (preferredPollId) {
+            await loadPollDetails(preferredPollId);
+          }
+          setStatus('LivePoll data refreshed.', 'ok');
+        } catch (error) {
+          setStatus(error.userMessage || error.message || 'Unable to refresh data.', 'error');
+        } finally {
+          setBusy(false);
+        }
+      };
+
+      useEffect(() => {
+        refreshAll();
+
+        const messageHandler = async (event) => {
+          if (event.data?.type === 'LIVEPOLL_OAUTH_SUCCESS') {
+            window.livePollApi.storeSession(event.data.payload);
+            setSession(window.livePollApi.readStoredSession());
+            setStatus('Google login completed. Tokens were stored locally.', 'ok');
+            await refreshAll(selectedPollId);
+          }
+        };
+
+        window.addEventListener('message', messageHandler);
+        return () => window.removeEventListener('message', messageHandler);
+      }, []);
+
+      useEffect(() => {
+        if (selectedPollId) {
+          loadPollDetails(selectedPollId).catch((error) => {
+            setStatus(error.userMessage || error.message || 'Unable to load poll details.', 'error');
+          });
+        }
+      }, [selectedPollId]);
+
+      const handleLogin = async (username, password) => {
+        setBusy(true);
+        try {
+          const auth = await window.livePollApi.loginWithPassword(username, password);
+          setSession({
+            accessToken: auth.accessToken,
+            refreshToken: auth.refreshToken,
+            username: auth.username,
+            roles: auth.roles,
+          });
+          setStatus(`Signed in as ${auth.username}.`, 'ok');
+          await refreshAll(selectedPollId);
+        } catch (error) {
+          setStatus(error.userMessage || 'Login failed.', 'error');
+        } finally {
+          setBusy(false);
+        }
+      };
+
+      const handleLogout = async () => {
+        try {
+          await window.livePollApi.api.post('/auth/logout');
+        } catch {
+          // Stateless demo logout can ignore backend errors.
+        }
+
+        window.livePollApi.clearSession();
+        setSession(window.livePollApi.readStoredSession());
+        setStatus('Logged out locally. Tokens were removed from the browser.', 'warn');
+      };
+
+      const handleCreatePoll = async (event) => {
+        event.preventDefault();
+        const options = pollForm.options
+          .split('\n')
+          .map((item) => item.trim())
+          .filter(Boolean);
+
+        if (options.length < 2) {
+          setStatus('A poll needs at least two options.', 'error');
+          return;
+        }
+
+        setBusy(true);
+        try {
+          const payload = {
+            question: pollForm.question,
+            description: pollForm.description,
+            expiresAt: pollForm.expiresAt || null,
+            options,
+          };
+
+          const created = await window.livePollApi.createPoll(payload);
+          setPollForm({
+            question: '',
+            description: '',
+            expiresAt: '',
+            options: 'Live results chart\nAnonymous voting\nPoll scheduling',
+          });
+          setStatus('Poll created successfully.', 'ok');
+          await refreshAll(created.id);
+          setSelectedPollId(created.id);
+        } catch (error) {
+          setStatus(error.userMessage || 'Unable to create poll.', 'error');
+        } finally {
+          setBusy(false);
+        }
+      };
+
+      const handleVote = async (optionId) => {
+        if (!selectedPollId) {
+          return;
+        }
+
+        setBusy(true);
+        try {
+          const updated = await window.livePollApi.vote(selectedPollId, optionId);
+          setSelectedPoll(updated);
+          await loadPolls(selectedPollId);
+          setStatus('Your vote was recorded.', 'ok');
+        } catch (error) {
+          setStatus(error.userMessage || 'Unable to submit your vote.', 'error');
+        } finally {
+          setBusy(false);
+        }
+      };
+
+      const handleDelete = async () => {
+        if (!selectedPollId) {
+          return;
+        }
+
+        if (!window.confirm('Delete this poll?')) {
+          return;
+        }
+
+        setBusy(true);
+        try {
+          await window.livePollApi.deletePoll(selectedPollId);
+          setSelectedPollId(null);
+          setSelectedPoll(null);
+          setStatus('Poll deleted.', 'warn');
+          await refreshAll(null);
+        } catch (error) {
+          setStatus(error.userMessage || 'Unable to delete poll.', 'error');
+        } finally {
+          setBusy(false);
+        }
+      };
+
+      const sessionLabel = useMemo(() => {
+        if (!isAuthenticated) {
+          return 'Guest session';
+        }
+
+        return `${session.username || 'authenticated user'} · ${session.roles?.join(', ') || 'ROLE_USER'}`;
+      }, [session, isAuthenticated]);
+
+      return (
+        <div className="page">
+          <section className="hero">
+            <div className="hero-card">
+              <span className="eyebrow">Experiment 9 · Secure + Scalable Full Stack</span>
+              <h1>LivePoll</h1>
+              <p>
+                This demo connects Spring Security, JWT, Google OAuth, role-based access control, JPA optimization,
+                and a React frontend. Admins can create polls, authenticated users can vote, and the frontend can switch
+                between standard, paged, and cursor-based list queries.
+              </p>
+              <div className="footer-note">
+                Flow: login with password or Google, store tokens in the browser, call secured backend APIs, and render poll results in real time.
+              </div>
+            </div>
+
+            <div className="stats">
+              <div className="stat">
+                <strong>{polls.length}</strong>
+                <span>Polls loaded from the H2 database.</span>
+              </div>
+              <div className="stat">
+                <strong>{isAuthenticated ? 'Online' : 'Guest'}</strong>
+                <span>{sessionLabel}</span>
+              </div>
+              <div className="stat">
+                <strong>{isAdmin ? 'ADMIN' : 'USER'}</strong>
+                <span>Role-based access control is enforced by Spring Security.</span>
+              </div>
+              <div className="stat">
+                <strong>{busy ? 'Working' : 'Ready'}</strong>
+                <span>JWT refresh and Google popup login are wired to the backend.</span>
+              </div>
+            </div>
+          </section>
+
+          <div className={`status-banner ${statusTone}`}>
+            {statusMessage}
+          </div>
+
+          <section className="layout">
+            <aside className="panel">
+              <h2>Authentication</h2>
+              <p className="subtle">Use one of the classroom users or open the Google OAuth popup.</p>
+
+              <div className="stack">
+                <div>
+                  <div className="field">
+                    <label>Username</label>
+                    <input
+                      value={loginForm.username}
+                      onChange={(event) => setLoginForm({ ...loginForm, username: event.target.value })}
+                      placeholder="alice"
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Password</label>
+                    <input
+                      type="password"
+                      value={loginForm.password}
+                      onChange={(event) => setLoginForm({ ...loginForm, password: event.target.value })}
+                      placeholder="password123"
+                    />
+                  </div>
+                  <div className="button-group">
+                    <button onClick={() => handleLogin(loginForm.username, loginForm.password)} disabled={busy}>
+                      Sign In
+                    </button>
+                    <button className="secondary" onClick={window.livePollApi.startGoogleLogin} disabled={busy}>
+                      Google Login
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="field">
+                    <label>Demo users</label>
+                  </div>
+                  <div className="demo-grid">
+                    <button className="secondary" onClick={() => handleLogin('alice', 'password123')} disabled={busy}>
+                      alice
+                    </button>
+                    <button className="secondary" onClick={() => handleLogin('bob', 'password123')} disabled={busy}>
+                      bob
+                    </button>
+                    <button className="secondary" onClick={() => handleLogin('carol', 'password123')} disabled={busy}>
+                      carol
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="field">
+                    <label>Current session</label>
+                  </div>
+                  <div className="card-actions">
+                    <button className="secondary" onClick={refreshAll} disabled={busy}>
+                      Refresh session
+                    </button>
+                    <button className="danger" onClick={handleLogout} disabled={busy || !isAuthenticated}>
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {isAdmin && (
+                <div style={{ marginTop: '18px' }}>
+                  <h2>Create Poll</h2>
+                  <p className="subtle">Admins can create a new poll and immediately see it in the list.</p>
+
+                  <form onSubmit={handleCreatePoll}>
+                    <div className="field">
+                      <label>Question</label>
+                      <input
+                        value={pollForm.question}
+                        onChange={(event) => setPollForm({ ...pollForm, question: event.target.value })}
+                        placeholder="Which feature should go live next?"
+                      />
+                    </div>
+
+                    <div className="field">
+                      <label>Description</label>
+                      <input
+                        value={pollForm.description}
+                        onChange={(event) => setPollForm({ ...pollForm, description: event.target.value })}
+                        placeholder="Optional context for voters"
+                      />
+                    </div>
+
+                    <div className="field">
+                      <label>Expires at</label>
+                      <input
+                        type="datetime-local"
+                        value={pollForm.expiresAt}
+                        onChange={(event) => setPollForm({ ...pollForm, expiresAt: event.target.value })}
+                      />
+                    </div>
+
+                    <div className="field">
+                      <label>Options, one per line</label>
+                      <textarea
+                        value={pollForm.options}
+                        onChange={(event) => setPollForm({ ...pollForm, options: event.target.value })}
+                      />
+                    </div>
+
+                    <button type="submit" disabled={busy}>
+                      Create Poll
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              <div className="footer-note">
+                Google OAuth requires valid Google client id and secret values in the backend config before the button will complete a real login.
+              </div>
+            </aside>
+
+            <main className="panel">
+              <h2>Polls</h2>
+              <p className="subtle">Click a poll to inspect the current vote distribution and cast a vote if the poll is open.</p>
+
+              <div className="stack" style={{ marginBottom: '14px' }}>
+                <div className="row">
+                  <button
+                    className={pollFetchMode === 'standard' ? '' : 'secondary'}
+                    disabled={busy}
+                    onClick={() => {
+                      setOptimizedPage(0);
+                      setCursorState({ createdAt: null, id: null });
+                      loadPolls(selectedPollId, { mode: 'standard' }).catch((error) => {
+                        setStatus(error.userMessage || error.message || 'Unable to load standard list.', 'error');
+                      });
+                    }}
+                  >
+                    Standard
+                  </button>
+                  <button
+                    className={pollFetchMode === 'offset' ? '' : 'secondary'}
+                    disabled={busy}
+                    onClick={() => {
+                      setOptimizedPage(0);
+                      setCursorState({ createdAt: null, id: null });
+                      loadPolls(selectedPollId, { mode: 'offset', page: 0 }).catch((error) => {
+                        setStatus(error.userMessage || error.message || 'Unable to load paged list.', 'error');
+                      });
+                    }}
+                  >
+                    Paged
+                  </button>
+                  <button
+                    className={pollFetchMode === 'cursor' ? '' : 'secondary'}
+                    disabled={busy}
+                    onClick={() => {
+                      setCursorState({ createdAt: null, id: null });
+                      loadPolls(selectedPollId, { mode: 'cursor', cursor: { createdAt: null, id: null } }).catch((error) => {
+                        setStatus(error.userMessage || error.message || 'Unable to load cursor list.', 'error');
+                      });
+                    }}
+                  >
+                    Cursor
+                  </button>
+                </div>
+
+                <div className="row">
+                  <select
+                    value={pollStatusFilter}
+                    onChange={(event) => {
+                      const nextStatus = event.target.value;
+                      setOptimizedPage(0);
+                      setCursorState({ createdAt: null, id: null });
+                      loadPolls(selectedPollId, {
+                        mode: pollFetchMode,
+                        status: nextStatus,
+                        page: 0,
+                        cursor: { createdAt: null, id: null },
+                      }).catch((error) => {
+                        setStatus(error.userMessage || error.message || 'Unable to apply status filter.', 'error');
+                      });
+                    }}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(15, 23, 42, 0.8)',
+                      color: 'var(--text)',
+                      border: '1px solid var(--line)',
+                      borderRadius: '14px',
+                      padding: '0.82rem 0.95rem'
+                    }}
+                  >
+                    <option value="ALL">All Statuses</option>
+                    <option value="OPEN">Open</option>
+                    <option value="CLOSED">Closed</option>
+                  </select>
+                </div>
+
+                {pollFetchMode === 'offset' && (
+                  <div className="row">
+                    <button
+                      className="secondary"
+                      disabled={busy || optimizedPage <= 0}
+                      onClick={() => loadPolls(selectedPollId, { mode: 'offset', page: Math.max(optimizedPage - 1, 0) })}
+                    >
+                      Prev Page
+                    </button>
+                    <button
+                      className="secondary"
+                      disabled={busy || !hasNextPage}
+                      onClick={() => loadPolls(selectedPollId, { mode: 'offset', page: optimizedPage + 1 })}
+                    >
+                      Next Page
+                    </button>
+                  </div>
+                )}
+
+                {pollFetchMode === 'cursor' && (
+                  <div className="row">
+                    <button
+                      className="secondary"
+                      disabled={busy}
+                      onClick={() => {
+                        setCursorState({ createdAt: null, id: null });
+                        loadPolls(selectedPollId, { mode: 'cursor', cursor: { createdAt: null, id: null } });
+                      }}
+                    >
+                      First Cursor Page
+                    </button>
+                    <button
+                      className="secondary"
+                      disabled={busy || !hasNextPage}
+                      onClick={() => loadPolls(selectedPollId, { mode: 'cursor', cursor: cursorState })}
+                    >
+                      Next Cursor Page
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="poll-list">
+                {polls.map((poll) => (
+                  <div
+                    key={poll.id}
+                    className={`poll-card ${selectedPollId === poll.id ? 'active' : ''}`}
+                    onClick={() => setSelectedPollId(poll.id)}
+                  >
+                    <div className="poll-meta">
+                      <span className={`badge ${poll.status === 'OPEN' ? 'green' : 'gray'}`}>{poll.status}</span>
+                      <span className="badge blue">{poll.totalVotes} votes</span>
+                      <span className="badge gray">by {poll.createdBy}</span>
+                    </div>
+                    <h3 className="poll-title">{poll.question}</h3>
+                    <div className="muted">{poll.description || 'No description provided.'}</div>
+                  </div>
+                ))}
+
+                {!polls.length && (
+                  <div className="poll-card">
+                    <h3 className="poll-title">No polls yet</h3>
+                    <div className="muted">Create one as ADMIN to seed the LivePoll workflow.</div>
+                  </div>
+                )}
+              </div>
+            </main>
+
+            <aside className="panel">
+              <h2>Poll Details</h2>
+              <p className="subtle">Results are fetched from the backend after every vote.</p>
+
+              {!selectedPoll && (
+                <div className="poll-card">
+                  <h3 className="poll-title">Select a poll</h3>
+                  <div className="muted">The detailed results view will appear here.</div>
+                </div>
+              )}
+
+              {selectedPoll && (
+                <div className="stack">
+                  <div className="poll-card">
+                    <div className="poll-meta">
+                      <span className={`badge ${selectedPoll.status === 'OPEN' ? 'green' : 'gray'}`}>{selectedPoll.status}</span>
+                      <span className="badge blue">{selectedPoll.totalVotes} votes</span>
+                    </div>
+                    <h3 className="poll-title">{selectedPoll.question}</h3>
+                    <div className="muted">
+                      {selectedPoll.description || 'No description available.'}
+                    </div>
+                    <div className="footer-note code">
+                      Created by {selectedPoll.createdBy} · {selectedPoll.expiresAt || 'no expiry set'}
+                    </div>
+                  </div>
+
+                  <div className="option-list">
+                    {selectedPoll.options.map((option) => (
+                      <div key={option.id} className="option-card">
+                        <div className="option-top">
+                          <div className="option-name">{option.text}</div>
+                          <div className="option-count">
+                            {option.voteCount} vote{option.voteCount === 1 ? '' : 's'} · {option.percentage}%
+                          </div>
+                        </div>
+                        <div className="progress">
+                          <div style={{ width: `${option.percentage}%` }} />
+                        </div>
+                        <div className="card-actions">
+                          <button
+                            onClick={() => handleVote(option.id)}
+                            disabled={busy || voteDisabled || !isAuthenticated}
+                          >
+                            Vote
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="card-actions">
+                    <button className="secondary" onClick={() => loadPollDetails(selectedPollId)} disabled={busy}>
+                      Refresh results
+                    </button>
+                    {isAdmin && (
+                      <button className="danger" onClick={handleDelete} disabled={busy}>
+                        Delete poll
+                      </button>
+                    )}
+                  </div>
+
+                  {!isAuthenticated && (
+                    <div className="status-banner warn">
+                      Log in to vote. Admins can create and delete polls.
+                    </div>
+                  )}
+
+                  {isAuthenticated && !isAdmin && (
+                    <div className="status-banner ok">
+                      You are signed in as a regular user. Voting is enabled; poll creation is restricted to admins.
+                    </div>
+                  )}
+                </div>
+              )}
+            </aside>
+          </section>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
